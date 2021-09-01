@@ -14,7 +14,11 @@
 3. End-to-End(검출+인식) 평가 방법
 	- 문자 검출, 인식에 대해 순차적으로 평가함
 
-#### 평가지표 배경지식
+
+<details>
+<summary> 평가지표 배경지식📌(펼치기)</summary>
+<div markdown="1">   
+
 - ROI 평가 지표 : IoU
 	- Intersection over Union
 	- 이미지에서 문자영역 검출(ROI)에 대한 평가 지표
@@ -32,6 +36,9 @@
 		- Word based Exactly Matching
 		- 정답과 예측 단어가 정확히 일치하는지 확인함 (단어기반)
 		- 전체 글자(단어)의 일치도를 1, 0으로 평가함
+
+</div>
+</details>
 
 
 ### 프로젝트 기간
