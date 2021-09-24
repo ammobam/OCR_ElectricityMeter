@@ -84,4 +84,5 @@ class ROI2csv:
 # 1. roi csv를 저장할 디렉토리 이름 입력하기
 ROI2csv = ROI2csv('./roi')
 # 2. 원본 이미지 디렉토리, 읽어올 파일 인덱스 입력
+# 3. 적절한 roi를 드래그 한 다음 esc를 눌러 다음 파일 작업
 ROI2csv.roi2csv('./img_src_0906', 0, 3)
