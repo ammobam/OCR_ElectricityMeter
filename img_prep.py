@@ -24,7 +24,7 @@
 
 from select_ROI import ROI2Img
 r = ROI2Img(roi_path='./data/roi')
-r.roi2img('./data/Electricitymeter', 134+43+159+250+64, -1)
+r.roi2img('./data/Electricitymeter', 0, -1)
 # 영역 바깥으로 설정된 사진들
 # ./data/Electricitymeter/01232009721_P1107.jpg
 # ./data/ElectricityMeter/01232010345_P1132.jpg
