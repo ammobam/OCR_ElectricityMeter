@@ -1,17 +1,18 @@
 (🐥진행 중인 프로젝트입니다. 작성 중인 README입니다.)
 
-# 전기계량기 OCR 인식을 통한 전력량 도출
+# OCR Project
+
+## [🐥프로젝트 수행일지 (click)](ammobam.github.io/)
+
 ## Repository 구조
 ```
-Display_SensorData
-├── 📁src 
-|	├── 📁 1. 이미지 전처리
-|	|	├── 📃device_ROI.ipynb
-|	|	├── 📃data_ROI.ipynb
-|	|	└── 📃
-|	├── 📁 2. 
-|	└── 📁 3. 
-└── 📃최종 모델링 완료 코드.ipynb
+OCR Project
+├── 📁OCR_ElectricityMeter_imgprep
+|	└── 📁src
+|		├── 📃select_ROI.ipynb
+|		├── 📃img_prep.ipynb
+|		└── 📃
+└── 📁OCR_ElectricityMeter_android 
 ```
 ## 목차
 
@@ -27,22 +28,23 @@ Display_SensorData
 	- Python (ver 3.7)
 - **Tools**
 	- Github
-	- Google Drive
 	- Slack
+	- Google Drive
 - **IDE**
 	- PyCharm
-- **Analysis Library**
+	- AndroidStudio
+- **Library**
 	- OpenCV (ver 4.5)
+	- Tensorflow (🐥)
 	- Matplotlib (ver 3.2)
-	- Pandas (ver 1.1)
 	- Numpy (ver 1.19)
-	- Sklearn (ver 0.22)
 
 
 ## 프로젝트 개요
 ### 프로젝트 목적
-- 전기계량기 이미지로부터 전력량, 계량기 제조번호를 추출하고, 모뎀 이미지에서 바코드를 추출자 함
-- 개인 디바이스로 전기계량기 이미지를 촬영하여 서버에 전송하면 전력량, 계량기 제조번호, 모뎀 바코드를 json 형식으로 추출하고 요금을 산정하는 서비스에 이용될 예정임
+- 전기계량기와 모뎀 이미지로부터 OCR을 수행하여 제조번호, 바코드 등을 인식하고자 함
+- 개인 디바이스로 전기계량기와 모뎀을 촬영하여 이미지를 서버에 전송하면 계량기 타입, 제조번호, 모뎀 바코드를 문자로 읽어 내어 json 형식으로 추출하여 저장함
+- 추후 계량기와 모뎀의 1:1 관리하는 서비스 등에 이용될 예정임
 
 ### 프로젝트 목표
 1. 문자 검출(ROI) 평가 목표 : IoU 0.5 이상
@@ -89,25 +91,6 @@ Display_SensorData
 ### 업무 분장
 - 모든 팀원은 이미지 처리 및 모델링 학습을 공통 목표로 하고 있음
 - 모든 팀원이 동일한 과정을 수행함
-
-## 개발환경 - 향후 추가 예정
-- HW/Server
-	- Window (ver 10 / CPU i7 / RAM 16)
-- Language
-	- Python (ver 3.7.11)
-	- Kotlin
-- Tools
-	- Github
-	- Google Drive
-	- Slack
-- IDE
-	- PyCharm
-- Analysis Library
-	- Pytorch
-	- OpenCV
-	- PIL
-	- Pandas (ver 1.1.5)
-	- Numpy (ver 1.19.5)
 
 
 ## 데이터 탐색
