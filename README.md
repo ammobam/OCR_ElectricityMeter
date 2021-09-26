@@ -2,7 +2,7 @@
 
 # OCR Project
 
-## [🐥프로젝트 수행일지 (click)](ammobam.github.io/)
+## [🐥프로젝트 수행일지 (click)](https://ammobam.github.io/categories/#ocr-project)
 
 ## Repository 구조
 ```
