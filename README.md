@@ -8,12 +8,14 @@
 ```
 OCR Project
 ├── 📁OCR_ElectricityMeter_imgprep
-|	└── 📁src
-|		├── 📃select_ROI.ipynb
-|		├── 📃img_prep.ipynb
-|		└── 📃
+|	├── 📁src
+|	|	├── 📃select_ROI.ipynb
+|	|	├── 📃img_prep.ipynb
+|	|	└── 📃(🐥추가예정)
+|	└── 📁data/roi (ROI 좌표 파일)
 └── 📁OCR_ElectricityMeter_android 
 ```
+
 ## 목차
 
   * [프로젝트 개요](#프로젝트-개요)
