@@ -2,18 +2,20 @@
 
 # OCR Project
 
-## [🐥프로젝트 수행일지 (click)](ammobam.github.io/)
+## [🐥프로젝트 수행일지 (click)](https://ammobam.github.io/categories/#ocr-project)
 
 ## Repository 구조
 ```
 OCR Project
 ├── 📁OCR_ElectricityMeter_imgprep
-|	└── 📁src
-|		├── 📃select_ROI.ipynb
-|		├── 📃img_prep.ipynb
-|		└── 📃
+|	├── 📁src
+|	|	├── 📃select_ROI.ipynb
+|	|	├── 📃img_prep.ipynb
+|	|	└── 📃(🐥추가예정)
+|	└── 📁data/roi (ROI 좌표 파일)
 └── 📁OCR_ElectricityMeter_android 
 ```
+
 ## 목차
 
   * [프로젝트 개요](#프로젝트-개요)
