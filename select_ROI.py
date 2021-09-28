@@ -24,6 +24,9 @@ import csv
 
 
 # 예외처리 클래스
+from prep_img import GetImg
+
+
 class MyError(Exception):
     def __init__(self, msg='init_error_msg'):
         self.msg = msg
@@ -41,12 +44,15 @@ class Dir2File:
 
     # 파일이름 리스트 만들기
     def filename(self):
-        src_names = []
-        for name in self.file_names:
-            # 이름에서 확장자 제외
-            src_name, _jpg = name.split('.')
-            src_names.append(src_name)
-        return src_names
+        # src_names = []
+        # temp = []
+        # for name in self.file_names:
+        #     # 이름에서 확장자 제외
+        #     src_name = name.split('.')[:1]
+        #     temp.append(src_name)
+        #     # 이중리스트 -> 단일리스트
+        #     src_names = sum(temp, [])
+        return sum([name.split('.')[:1] for name in self.file_names], [])
 
 
 # 이미지에서 마우스로 ROI 를 추출하고 esc 키를 누르면 좌표가 csv 파일로 저장하는 클래스
@@ -160,15 +166,13 @@ class ROI2Img:
             for i, src_name in enumerate(src_names[n:m]):
                 src_file = file_path + '/' + src_name + '.jpg'
                 print(f"- {(i + 1) / (m - n) * 100:.1f}%.....{i + 1}번째_수행파일:{src_file}")  # 확인
-                src = cv2.imread(src_file, cv2.IMREAD_COLOR)
+
+                # src = cv2.imread(src_file, cv2.IMREAD_COLOR)
+                x = GetImg(src_name)
+                src = x.printHSV()
 
                 # 이미지 resize 하기
-                src_height, src_width = src.shape[:2]
-                # 이미지 가로길이가 700이 되도록 설정함
-                ratio = 700 / src_width
-                src_height, src_width = int(src_height * ratio), int(src_width * ratio)
-                # 파라미터 입력 시에는 가로, 세로 순서로 입력
-                src = cv2.resize(src, (src_width, src_height))
+                src = x.resize_check(src)
 
                 while True:
                     # 좌표 읽어오기
@@ -176,7 +180,7 @@ class ROI2Img:
                     x1, y1, x2, y2 = coo
 
                     # roi 영역에 사각형 그리기
-                    rect = cv2.rectangle(src, (x1, y1), (x2, y2), (0, 0, 255), thickness=2)
+                    rect = cv2.rectangle(src, (x1, y1), (x2, y2), (0, 255, 0), thickness=2)
                     cv2.imshow('roi', rect)
 
                     # 계량기 데이터 영역에 사각형 그리기
@@ -186,7 +190,7 @@ class ROI2Img:
                     x2_ = int(x2 + 0.4*width)
                     y1_ = int(y1 - 0.7*height)
                     y2_ = int(y2 + 3*height)
-                    rect = cv2.rectangle(src, (x1_, y1_), (x2_, y2_), (0, 0, 255), thickness=2)
+                    rect = cv2.rectangle(src, (x1_, y1_), (x2_, y2_), (0, 255, 0), thickness=2)
                     cv2.imshow('roi', rect)
 
                     # roi 를 드래그하고 키보드 esc 를 누르면 다음 이미지 작업 수행함
