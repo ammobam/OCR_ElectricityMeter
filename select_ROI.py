@@ -1,5 +1,5 @@
-'''
-# 사용방법 예시코드
+"""
+# 예시코드
 
 # 1. 이미지 좌표 추출
 from select_ROI import ROI2csv
@@ -11,22 +11,19 @@ ROI2csv.roi2csv('./data/ElectricityMeter', 0, 20) # 읽어올 이미지의 디�
 # 2. 좌표를 이미지에 표시
 from select_ROI import ROI2Img
 r = ROI2Img(roi_path='./data/roi') # csv 디렉토리 입력
-r.roi2img('./data/Electricitymeter', 0, 20) # 읽어올 이미지의 디렉토리, 인덱스 처음, 끝 입력
+r.roi2img('./data/ElectricityMeter', 0, 20) # 읽어올 이미지의 디렉토리, 인덱스 처음, 끝 입력
 
-'''
-
+"""
 
 
 # 패키지 임포트
 import os
 import cv2
 import csv
-
-
-# 예외처리 클래스
 from prep_img import GetImg
 
 
+# 예외처리 클래스
 class MyError(Exception):
     def __init__(self, msg='init_error_msg'):
         self.msg = msg

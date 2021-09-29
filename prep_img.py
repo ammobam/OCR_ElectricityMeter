@@ -23,6 +23,26 @@ class GetImg:
         cv2.destroyAllWindows()
         return src_resize
 
+    # 객체 탐지 할 때 추출한 segmentation을 모델링 수행 후 원래 이미지 비율대로 펴서 확인함
+    # model_output : 각 segmentation의 모델 수행 결과물 (배열)
+    def resize_to_origin(self, src_segmentation, model_output):
+        # 이미지 resize 하기
+        src_height, src_width = src_segmentation.shape[:2]
+
+        # 이미지가 원래 사이즈를 갖도록 함
+        src_resize = cv2.resize(model_output, (src_width, src_height))
+
+        # 이미지 확인
+        while True:
+            cv2.imshow("src_check", src_resize) # 복원된 segmentation 이미지
+            key = cv2.waitKey()
+            if key == 27:  # esc 키
+                break
+        cv2.destroyAllWindows()
+        return src_resize
+
+
+
     def printGray(self):
         src = cv2.imread(self.src_file, cv2.IMREAD_GRAYSCALE)
         print(src)
