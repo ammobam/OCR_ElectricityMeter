@@ -17,7 +17,7 @@ x.preprocess(0,10)
 import cv2
 import os
 from prep_img import GetImg
-from select_ROI import Dir2File, ROI2Img, CreatePath
+from select_ROI import Dir2File, ROI2Img, CreatePath #, MyError
 import pytesseract
 
 
@@ -180,9 +180,10 @@ class OCR_prep:
             x.resize_check(rect)
             # cv2.imwrite('./rect.jpg', rect) # 이미지 저장
 
+
     # OCR 전처리 수행
-    # 1번만 수행할 것
-    # 각 데이터영역에 대한 ROI 이미지 파일 저장함.
+    # return 딕셔너리 - key:이미지 이름, value:데이터 영역 정보 (x, y, w, h)
+    # 각 데이터영역에 대한 ROI 이미지 파일 저장할 경우, 1번만 수행할 것
     # 원본 이미지 사이즈에 대해 수행함. 파라미터 값, ROI 좌표를 동적으로 변환함
     def preprocess(self, n, m):
 
@@ -190,6 +191,8 @@ class OCR_prep:
         dir2file = Dir2File(file_path=self.file_path)
         file_path = dir2file.file_path
         src_names = dir2file.filename()
+
+        src_roi = dict()    # 좌표를 저장할 딕셔너리 생성
 
         for i, src_name in enumerate(src_names[n:m]):
             src_file = file_path + '/' + src_name + '.jpg'
@@ -202,10 +205,8 @@ class OCR_prep:
 
 
             ## GrayScaling
-            x = GetImg(src_name)
-            # image check
-            # src = x.resize_check(x.printGray())   # 여기서 모든 이미지의 가로픽셀이 700으로 줄어들음. 이미지를 줄이지 말고 좌표에 원래 비율을 적용하자.
-            src = x.printGray()     # 원본 이미지 가져오기
+            get = GetImg(src_name)
+            src = get.printGray()     # 원본 이미지 가져오기
 
             ## Binary
             # parameter
@@ -221,7 +222,7 @@ class OCR_prep:
 
             src_binary = cv2.adaptiveThreshold(src, max_val, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,
                                                block_size, C)
-            # x.img_check(src_binary)
+            # get.img_check(src_binary)
 
 
 
@@ -236,7 +237,7 @@ class OCR_prep:
             # k_box_y = int(2 * src_width / 700)
             # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k_box_x, k_box_y))
             # src_dilate = cv2.morphologyEx(src_binary, cv2.MORPH_DILATE, kernel)
-            # # x.img_check(src_dilate)
+            # # get.img_check(src_dilate)
 
             # MORPH_ERODE - ellipse
             k_box_x = int(4 * src_width / 700)
@@ -245,14 +246,14 @@ class OCR_prep:
             src_erode = cv2.morphologyEx(src_binary, cv2.MORPH_ERODE, kernel)
 
             # src_gradient = src_dilate - src_erode
-            # x.img_check(src_gradient)
+            # get.img_check(src_gradient)
 
             # # MORPH_CLOSE
             # k_box_x = int(7 * src_width / 700)
             # k_box_y = int(1 * src_width / 700)
             # c_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (k_box_x, k_box_y))
             # src_close = cv2.morphologyEx(src_gradient, cv2.MORPH_CLOSE, c_kernel)
-            # x.img_check(src_close)
+            # get.img_check(src_close)
 
             # MORPH_DILATE - rect
             # k_box_3 = int(3 * src_width / 700)
@@ -260,98 +261,152 @@ class OCR_prep:
             k_box_y = int(2 * src_width / 700)
             kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (k_box_x, k_box_y))
             src_dilate_2 = cv2.morphologyEx(src_erode, cv2.MORPH_DILATE, kernel)
-            # x.img_check(src_dilate_2)
+            # get.img_check(src_dilate_2)
 
             # MORPH_ERODE - rect
             k_box_x = int(5 * src_width / 700)
             k_box_y = int(2 * src_width / 700)
             kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (k_box_x, k_box_y))
             src_erode_2 = cv2.morphologyEx(src_dilate_2, cv2.MORPH_ERODE, kernel)
-            # x.img_check(src_erode_2)
+            # get.img_check(src_erode_2)
 
             src_close = src_erode_2
+
+            # get.img_check(src)
 
 
 
             ## contouring
             contours, hierarchy = cv2.findContours(src_close, mode=cv2.RETR_LIST, method=cv2.CHAIN_APPROX_TC89_L1)
             # print(len(contours)) # 이미지 당 200개 이상 있음
+            # print("원래 외곽선:", contours[:2])
 
             # contours 중 면적이 넓은 외곽선 70개 그려서 확인
-            # 가장 면적이 넓은 외곽선은 대부분 배경에 그려지므로 제외함
             # cv2.contourArea : contours가 감싼 면적
             # contours = sorted(contours, key=cv2.contourArea, reverse=True)[2:70]
-            # contours = sorted(contours, key=cv2.contourArea, reverse=True)[2:100]
-            # contours = sorted(contours, key=cv2.contourArea, reverse=True)[:]
+            # contours = sorted(contours, key=cv2.contourArea, reverse=False)[30:]
 
-            # contour 확인
-            # src = x.printRGB()
+            # 왜 sorted를 실행하면 아직 선언하지도 않은 x namespace 에러가 나지 ?
+            # --> cv2.contourArea가 비동기 처리 방식일 수 있음
+            # 해결방법 1: 메소드 실행 흐름을 끊어서 contours를 저장하고 불러내서 사용
+            # 해결방법 2: cv2.contourArea 를 사용하지 않고 직접 연산하는 방식 이용
+
+            #print(contours)
+            # print("정렬한 외곽선:", contours[:2])
+
+            # # contour 확인
+            # src = get.printRGB()
             # src_contour = cv2.drawContours(src, contours, contourIdx=-1, color=(0, 255, 0), thickness=2)
-            # x.img_check(src_contour)
+            # get.img_check(src_contour)
+
 
             # 추려낸 contours 대상으로 사각형 그려서 text 영역별로 crop 수행
             idx = 0
+            data_roi_coo = set()   # 좌표 저장할 set. epsilon 범위별로 잡히는 좌표가 중복되는 경우가 있음. 중복 저장을 피하기 위해 set에 저장.
             for con in contours:
                 idx += 1
                 # print("-----------\n", idx, con)
 
                 perimeter = cv2.arcLength(con, True)    # 외곽선 둘레 길이를 반환
 
-                for epsilon in range(0, 200):
-                    epsilon = epsilon/1000              # epsilon 을 0.001 단위로 늘려가며 적용해야 "G-Type"부분이 잡힘
-                    approx = cv2.approxPolyDP(con, epsilon * perimeter, True) # 외곽선 근사화하여 좌표 반환
 
-                    # # 다각형 그려서 확인
-                    # poly = cv2.polylines(src, [approx], True, (0, 0, 255), thickness=3)
+                # x, y, w, h의 namespace 설정
+                x = 0
+                y = 0
+                w = 0
+                h = 0
+
+                for epsilon in range(50, 200):
+
+                    epsilon = epsilon / 1000
+                    # 외곽선 근사화하여 좌표 반환
+                    approx = cv2.approxPolyDP(con, epsilon * perimeter, True)
+
+                    # 다각형 그려서 확인
+                    # poly = cv2.polylines(src, [approx], True, (0, 0, 255), thickness=1)
                     # cv2.imshow('poly', poly)
-                    # key = cv2.waitKey()
-                    # if key == 27:  # esc 키
-                    #     break
+                    # cv2.waitKey(0)
+
 
                     # 4개의 코너를 가지는 Edge Contour에 대해 사각형 추출
                     if len(approx) == 4:
-
                         x, y, w, h = cv2.boundingRect(con)      # 좌표를 감싸는 최소면적 사각형 정보 반환
-                        text_roi = src_binary[y:y+h, x:x+w]     # crop
+                        # text_roi = src_binary[y:y+h, x:x+w]     # crop
 
                         # 사각형 그리기
                         # 이미지 출력을 수행하면 메모리상에 있던 데이터가 반환돼서 이미지 저장할 데이터가 사라짐
                         # 저장 시에는 반드시 주석처리 할 것
-                        # rect = cv2.rectangle(src, (x, y), (x+w, y+h), (0, 0, 255), thickness=2)
-                        # cv2.imshow('roi', rect)
-                        # key = cv2.waitKey()
-                        # if key == 27:  # esc 키
-                        #     break
+                        rect = cv2.rectangle(src, (x, y), (x+w, y+h), (0, 0, 255), thickness=2)
+                        cv2.imshow('roi', rect)
+                        key = cv2.waitKey()
+                        if key == 27:
+                            break
 
                         # 각 텍스트 영역 이미지 저장
-                        # 이미지 당 약 10여초 걸림. 객체가 매우 많은 경우는 20초.
-                        cv2.imwrite(roi_path + '/' + str(idx) + '.jpg', text_roi)
+                        # 이미지 당 10초 내외로 걸림
+                        # cv2.imwrite(roi_path + '/' + str(idx) + '.jpg', text_roi)
 
+                    # 면적이 0인 좌표는 저장하지 않음
+                    if w * h != 0:
+                        data_roi_coo.add((x, y, w, h))   # ROI 좌표를 튜플로 저장함
+                print(data_roi_coo)
+
+            src_roi[src_name] = data_roi_coo
+        return src_roi
 
 
     def run_OCR(self, n, m):
-        pass
 
-        # 전처리 속도보다 전처리 완료된 이미지를 불러오는 게 더 빠르겠지
+        # 전처리 속도보다 전처리 완료된 이미지를 불러오는 게 더 빠름
         # 만약 src_name에 해당하는 text_roi 폴더가 있으면 파일 불러오고
-        # 없으면 preprocess 수행되도록 해야겠다
+        # 없으면 해당 이미지 1장에 대해 preprocess 수행되도록 함
         # text_roi = self.preprocess(n, m)
 
-        # # pytesseract PATH 설정
-        # pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
-        #
-        # for ..........
-        #
-        #     # 해당 영역에서 pytesseract 수행
-        #     # config parameters
-        #     # -l : 사용할 언어 설정
-        #     # --oem 1 : LSTM OCR 엔진 사용 설정
-        #     config = ('-l kor+eng --oem 1 --psm 3')
-        #     text = pytesseract.image_to_string(src_roi, config=config)
-        #     # text = pytesseract.image_to_string(src_roi, lang='kor')
-        #
-        #     # 확인
-        #     print(text)
+        # Get Img
+        dir2file = Dir2File(file_path=self.file_path)
+        file_path = dir2file.file_path
+        src_names = dir2file.filename()
+
+        # pytesseract PATH 설정
+        pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
+
+        # 이미지 전처리
+        roi_data = self.preprocess(n, m)  # 딕셔너리, 키:src_name, 값:데이터영역 (x, y, w, h)
+
+        for i, src_name in enumerate(src_names[n:m]):
+            src_file = file_path + '/' + src_name + '.jpg'
+            print("-----------------------------------------")
+            print(f"- {(i + 1) / (m - n) * 100:.1f}%.....{i + 1}번째_수행파일:{src_file}")  # 확인
+
+            print(f"{src_name}에서 추출한 영역 개수:", len(roi_data[src_name]))
+            print("추출 영역 데이터 확인(x, y, w, h):", roi_data[src_name])
+
+            # 이미지 가져오기
+            get = GetImg(src_name)
+            src = get.printGray()
+
+            # 각 추출 영역에 대해 OCR 수행
+            for roi in roi_data[src_name]:
+                x, y, w, h = roi
+
+                # 원본 이미지에 대해 데이터 ROI 영역 슬라이싱
+                src_roi = src[y:y+h, x:x+w]
+
+                # 해당 영역에서 pytesseract 수행
+                # config parameters
+                # -l : 사용할 언어 설정
+                # --oem 1 : LSTM OCR 엔진 사용 설정
+                config = ('-l kor+eng --oem 1 --psm 3')
+                text = pytesseract.image_to_string(src_roi, config=config)
+                # text = pytesseract.image_to_string(src_roi, lang='kor')
+
+                # 확인
+                # if len(text) != 1:
+                #     print(text, len(text), type(text))
+                print(text)
+
+
+
 
 
 
