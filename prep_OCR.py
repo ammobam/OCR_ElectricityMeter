@@ -1,10 +1,15 @@
 '''
 # 예시코드
 
-# OCR을 위한 이미지 전처리 수행 (contouring)
+# OCR을 위한 이미지 전처리 수행 및 데이터 ROI 파일 저장
 from prep_OCR import OCR_prep
 x = OCR_prep('./data/ElectricityMeter', './data/roi')
 x.preprocess(0,10)
+
+
+
+
+
 '''
 
 # OCR 수행을 위한 전처리
@@ -175,8 +180,10 @@ class OCR_prep:
             x.resize_check(rect)
             # cv2.imwrite('./rect.jpg', rect) # 이미지 저장
 
-    # OCR 수행 메소드
-    # 원본 이미지 사이즈에서 수행하기 위해 파라미터 값, ROI 좌표를 동적으로 변환함
+    # OCR 전처리 수행
+    # 1번만 수행할 것
+    # 각 데이터영역에 대한 ROI 이미지 파일 저장함.
+    # 원본 이미지 사이즈에 대해 수행함. 파라미터 값, ROI 좌표를 동적으로 변환함
     def preprocess(self, n, m):
 
         # Get Img
@@ -204,7 +211,7 @@ class OCR_prep:
             # parameter
             # max_val = src.max()
             max_val = 255
-            C = 20      # G-Type 영역 글자가 잘 보이도록 적절히 조절
+            C = 10      # G-Type 영역 글자가 잘 보이도록 적절히 조절
             bin = 10    # block_size는 홀수가 되도록 설정함
 
             if (src.shape[1] // bin) % 2 == 0:
@@ -214,7 +221,7 @@ class OCR_prep:
 
             src_binary = cv2.adaptiveThreshold(src, max_val, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,
                                                block_size, C)
-            x.img_check(src_binary)
+            # x.img_check(src_binary)
 
 
 
@@ -223,25 +230,46 @@ class OCR_prep:
             # 원본이미지에서 적절한 커널사이즈가 설정되도록 변경
             src_width, _ = src_binary.shape
 
-            # MORPH_DILATE
-            # k_box_3 = int(3 * src_width / 700)
-            k_box_x = int(7 * src_width / 700)
-            k_box_y = int(4 * src_width / 700)
+            # # MORPH_DILATE - ellipse
+            # # k_box_3 = int(3 * src_width / 700)
+            # k_box_x = int(7 * src_width / 700)
+            # k_box_y = int(2 * src_width / 700)
+            # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k_box_x, k_box_y))
+            # src_dilate = cv2.morphologyEx(src_binary, cv2.MORPH_DILATE, kernel)
+            # # x.img_check(src_dilate)
 
-            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k_box_x, k_box_y))
-            src_dilate = cv2.morphologyEx(src_binary, cv2.MORPH_DILATE, kernel)
-            # MORPH_ERODE
+            # MORPH_ERODE - ellipse
             k_box_x = int(4 * src_width / 700)
             k_box_y = int(1 * src_width / 700)
             kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k_box_x, k_box_y))
             src_erode = cv2.morphologyEx(src_binary, cv2.MORPH_ERODE, kernel)
-            src_gradient = src_dilate - src_erode
-            # MORPH_CLOSE
-            k_box_x = int(7 * src_width / 700)
-            k_box_y = int(1 * src_width / 700)
-            c_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (k_box_x, k_box_y))
-            src_close = cv2.morphologyEx(src_gradient, cv2.MORPH_CLOSE, c_kernel)
-            x.img_check(src_close)
+
+            # src_gradient = src_dilate - src_erode
+            # x.img_check(src_gradient)
+
+            # # MORPH_CLOSE
+            # k_box_x = int(7 * src_width / 700)
+            # k_box_y = int(1 * src_width / 700)
+            # c_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (k_box_x, k_box_y))
+            # src_close = cv2.morphologyEx(src_gradient, cv2.MORPH_CLOSE, c_kernel)
+            # x.img_check(src_close)
+
+            # MORPH_DILATE - rect
+            # k_box_3 = int(3 * src_width / 700)
+            k_box_x = int(1 * src_width / 700)
+            k_box_y = int(2 * src_width / 700)
+            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (k_box_x, k_box_y))
+            src_dilate_2 = cv2.morphologyEx(src_erode, cv2.MORPH_DILATE, kernel)
+            # x.img_check(src_dilate_2)
+
+            # MORPH_ERODE - rect
+            k_box_x = int(5 * src_width / 700)
+            k_box_y = int(2 * src_width / 700)
+            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (k_box_x, k_box_y))
+            src_erode_2 = cv2.morphologyEx(src_dilate_2, cv2.MORPH_ERODE, kernel)
+            # x.img_check(src_erode_2)
+
+            src_close = src_erode_2
 
 
 
@@ -249,20 +277,17 @@ class OCR_prep:
             contours, hierarchy = cv2.findContours(src_close, mode=cv2.RETR_LIST, method=cv2.CHAIN_APPROX_TC89_L1)
             # print(len(contours)) # 이미지 당 200개 이상 있음
 
-
-            # contours 중 면적이 넓은 외곽선 70개 그림
+            # contours 중 면적이 넓은 외곽선 70개 그려서 확인
             # 가장 면적이 넓은 외곽선은 대부분 배경에 그려지므로 제외함
             # cv2.contourArea : contours가 감싼 면적
             # contours = sorted(contours, key=cv2.contourArea, reverse=True)[2:70]
             # contours = sorted(contours, key=cv2.contourArea, reverse=True)[2:100]
             # contours = sorted(contours, key=cv2.contourArea, reverse=True)[:]
 
-
             # contour 확인
-            src = x.printRGB()
-            src_contour = cv2.drawContours(src, contours, contourIdx=-1, color=(0, 255, 0), thickness=2)
-            x.img_check(src_contour)
-
+            # src = x.printRGB()
+            # src_contour = cv2.drawContours(src, contours, contourIdx=-1, color=(0, 255, 0), thickness=2)
+            # x.img_check(src_contour)
 
             # 추려낸 contours 대상으로 사각형 그려서 text 영역별로 crop 수행
             idx = 0
@@ -270,13 +295,11 @@ class OCR_prep:
                 idx += 1
                 # print("-----------\n", idx, con)
 
-
                 perimeter = cv2.arcLength(con, True)    # 외곽선 둘레 길이를 반환
-                # approx = cv2.approxPolyDP(con, 0.02 * perimeter, True) # 외곽선 근사화하여 좌표 반환
 
                 for epsilon in range(0, 200):
                     epsilon = epsilon/1000              # epsilon 을 0.001 단위로 늘려가며 적용해야 "G-Type"부분이 잡힘
-                    approx = cv2.approxPolyDP(con, epsilon * perimeter, True)
+                    approx = cv2.approxPolyDP(con, epsilon * perimeter, True) # 외곽선 근사화하여 좌표 반환
 
                     # # 다각형 그려서 확인
                     # poly = cv2.polylines(src, [approx], True, (0, 0, 255), thickness=3)
@@ -285,30 +308,25 @@ class OCR_prep:
                     # if key == 27:  # esc 키
                     #     break
 
-                    if len(approx) == 4:    # 4개의 코너를 가지는 Edge Contour의 경우
+                    # 4개의 코너를 가지는 Edge Contour에 대해 사각형 추출
+                    if len(approx) == 4:
 
                         x, y, w, h = cv2.boundingRect(con)      # 좌표를 감싸는 최소면적 사각형 정보 반환
-
                         text_roi = src_binary[y:y+h, x:x+w]     # crop
-
 
                         # 사각형 그리기
                         # 이미지 출력을 수행하면 메모리상에 있던 데이터가 반환돼서 이미지 저장할 데이터가 사라짐
                         # 저장 시에는 반드시 주석처리 할 것
-                        rect = cv2.rectangle(src, (x, y), (x+w, y+h), (0, 0, 255), thickness=2)
-                        cv2.imshow('roi', rect)
-                        key = cv2.waitKey()
-                        if key == 27:  # esc 키
-                            break
+                        # rect = cv2.rectangle(src, (x, y), (x+w, y+h), (0, 0, 255), thickness=2)
+                        # cv2.imshow('roi', rect)
+                        # key = cv2.waitKey()
+                        # if key == 27:  # esc 키
+                        #     break
 
-                        # # 각 텍스트 영역 이미지 저장
-                        # cv2.imwrite(roi_path + '/' + str(idx) + '.jpg', text_roi)
+                        # 각 텍스트 영역 이미지 저장
+                        # 이미지 당 약 10여초 걸림. 객체가 매우 많은 경우는 20초.
+                        cv2.imwrite(roi_path + '/' + str(idx) + '.jpg', text_roi)
 
-
-
-            ## 이미지에서 데이터 영역 슬라이싱
-            # src_roi = self.work_in_ROI_origin(src_name, src_binary)
-            # x.img_check(src_roi)
 
 
     def run_OCR(self, n, m):
