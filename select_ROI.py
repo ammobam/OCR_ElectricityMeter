@@ -32,6 +32,16 @@ class MyError(Exception):
         return self.msg
 
 
+# 경로가 없으면 생성해주는 클래스
+class CreatePath:
+    def create_path(self, file_path):
+        try:
+            if not os.path.exists(file_path):
+                os.makedirs(file_path)
+        except OSError:
+            print(f"{file_path}는 없는 경로입니다. 해당 이미지의 text_roi 폴더를 생성합니다.")
+
+
 # 디렉토리 내의 파일이름을 리스트로 가져오는 클래스
 class Dir2File:
     # 디렉토리 경로 설정
@@ -50,6 +60,7 @@ class Dir2File:
         #     # 이중리스트 -> 단일리스트
         #     src_names = sum(temp, [])
         return sum([name.split('.')[:1] for name in self.file_names], [])
+
 
 
 # 이미지에서 마우스로 ROI 를 추출하고 esc 키를 누르면 좌표가 csv 파일로 저장하는 클래스
@@ -87,6 +98,7 @@ class ROI2csv:
                 # 이미지 가로길이가 700이 되도록 설정함
                 ratio = 700 / src_width
                 src_height, src_width = int(src_height * ratio), int(src_width * ratio)
+
                 # 파라미터 입력 시에는 가로, 세로 순서로 입력
                 src = cv2.resize(src, (src_width, src_height))
 
@@ -139,7 +151,8 @@ class ROI2Img:
             coo = sum([c for c in coo_obj], [])
             # 리스트 안의 문자열을 숫자로 바꿈
             coo = [int(a) for a in coo]
-            return coo
+            return coo   # x1, y1, x2, y2
+
 
     # 디렉토리에 있는 n번 이미지부터 m번 이미지까지 ROI 좌표 출력 수행
     def roi2img(self, file_path, n, m):

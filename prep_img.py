@@ -7,6 +7,17 @@ class GetImg:
     def __init__(self, src_name):
         self.src_file = './data/ElectricityMeter/' + src_name + '.jpg'
 
+    # 이미지 확인
+    def img_check(self, src):
+        while True:
+            cv2.imshow("src_check", src)
+            key = cv2.waitKey()
+            if key == 27:  # esc 키
+                break
+        cv2.destroyAllWindows()
+        # return src
+
+    # 이미지를 resize하여 확인
     def resize_check(self, src):
         # 이미지 resize 하기
         src_height, src_width = src.shape[:2]
@@ -45,7 +56,6 @@ class GetImg:
 
     def printGray(self):
         src = cv2.imread(self.src_file, cv2.IMREAD_GRAYSCALE)
-        print(src)
         return src
 
     def printRGB(self):
