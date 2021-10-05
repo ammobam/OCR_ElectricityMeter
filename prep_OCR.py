@@ -495,14 +495,18 @@ class OCR_prep:
                     # 4개의 코너를 가지는 Edge Contour에 대해 사각형 추출
                     if len(approx) == 4:
                         x, y, w, h = cv2.boundingRect(con)        # 좌표를 감싸는 최소면적 사각형 정보 반환
-                        # text_roi = src_binary[y:y+h, x:x+w]     # crop
+
 
                         src_w = src.shape[1]
                         src_h = src.shape[0]
 
+                        # 8-segment ROI 특정
                         if (w < 0.2 * src_w) or (w > 0.6 * src_w) or (h > 0.2 * src_h) or (w / h > 4) or (
                                 w / h < 1.7):  # 노이즈 무시
                             break
+
+                        # ROI 좌표를 튜플로 저장함
+                        data_roi_coo.add((x, y, w, h))
 
                         # 사각형 그리기
                         # 이미지 출력을 수행하면 메모리상에 있던 데이터가 반환돼서 이미지 저장할 데이터가 사라짐
@@ -513,9 +517,7 @@ class OCR_prep:
                         if key == 27:
                             break
 
-                    # 면적이 0인 좌표는 저장하지 않음
-                    if w * h != 0:
-                        data_roi_coo.add((x, y, w, h))   # ROI 좌표를 튜플로 저장함
+
 
             src_roi[src_name] = data_roi_coo
 
