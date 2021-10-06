@@ -10,7 +10,7 @@ class prep:
     def __init__(self, file_path):
         self.file_path = file_path  # 이미지 들어있는 파일경로
         self.file_names = os.listdir(file_path)  # 이미지 파일 이름
-        self.src_name = sum([name.split('.')[:1] for name in self.file_names], [])[0]  # 이미지 파일이름
+        self.src_name = sum([name.split('.')[:1] for name in self.file_names], [])[-1]  # 이미지 파일이름
         self.src_file = self.file_path + '/' + self.src_name + '.jpg'
 
     # 이미지 전처리 후 저장 경로 생성
@@ -125,3 +125,19 @@ class prep:
 
         if len(src_roi[self.src_name]) == 0:
             print("ROI를 탐지하지 못했습니다.")
+
+
+    # ROI를 탐지하지 못한 경우의 처리
+    def no_box(self):
+
+        # 이미지 전처리 결과 딕셔너리 가져오기
+        src_roi = self.find_8seg()
+
+        print(f"-----------------------------ROI of {self.src_name}-----------------------------")
+
+        if len(src_roi[self.src_name]) == 0:
+            print("ROI를 탐지하지 못했습니다. 다시 촬영해주십시오.")
+        elif len(src_roi[self.src_name]) == 2:
+            print("ROI가 2개 탐지하였습니다. 다시 촬영해주십시오.")
+        else:
+            print(src_roi[self.src_name])
