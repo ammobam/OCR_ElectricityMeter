@@ -1,43 +1,43 @@
+# 안드로이드에서 받은 이미지 파일 처리 클래스
 
-
-
-
-# 8-segment 영역(액정) 탐지
-# return 딕셔너리 - key: 이미지 이름, value: 8-segment영역 정보 튜플 (x, y, w, h)
 import cv2
-
-from prep_img import GetImg
-from select_ROI import Dir2File, CreatePath
-
+import os
 
 
 class prep:
 
+    # 파일경로 설정
     def __init__(self, file_path):
-        self.file_path = file_path  # 파일 읽어올 경로 입력
-        # self.roi_path = roi_path    # 전처리 파일 저장할 경로 입력
+        self.file_path = file_path  # 이미지 들어있는 파일경로
+        self.file_names = os.listdir(file_path)  # 이미지 파일 이름
+        self.src_name = sum([name.split('.')[:1] for name in self.file_names], [])[0]  # 이미지 파일이름
+        self.src_file = self.file_path + '/' + self.src_name + '.jpg'
 
-    # 안드로이드에서 전송한 이미지 파일 ROI 영역 탐지 함수
+    # 이미지 전처리 후 저장 경로 생성
+    def create_path(self, file_path):
+        try:
+            if not os.path.exists(self.file_path):
+                os.makedirs(self.file_path)
+        except OSError:
+            print(f"{self.file_path}는 없는 경로입니다. 해당 이미지의 text_roi 폴더를 생성합니다.")
+
+
+    # 안드로이드에서 전송한 이미지 파일 ROI 영역 탐지
+    # return 딕셔너리 - key: 이미지 이름, value: 8-segment영역 정보 튜플 (x, y, w, h)
     def find_8seg(self):
 
-        # 이미지 불러오기
-        dir2file = Dir2File(file_path=self.file_path)
-        file_path = dir2file.file_path
-        src_name = dir2file.filename()
-
         src_roi = dict()    # 좌표를 저장할 딕셔너리 생성
-        src_file = file_path + '/' + src_name + '.jpg'
+        src_file = self.file_path + '/' + self.src_name + '.jpg'
         print(f"- 수행파일:{src_file}")  # 확인
 
         # 좌표를 저장할 경로 생성
-        roi_path = './data/show/' + src_name
-        rp = CreatePath()
-        rp.create_path(roi_path)
+        roi_path = './data/show/' + self.src_name
+        self.create_path(roi_path)
 
 
         ## 이미지 읽어오기 - GrayScale
-        get = GetImg(src_name)
-        src = get.printGray()
+        src = cv2.imread(self.src_file, cv2.IMREAD_GRAYSCALE)
+
 
 
         ## Histogram equalization
@@ -58,14 +58,14 @@ class prep:
         src = cv2.adaptiveThreshold(src, max_val, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV,
                                            block_size, C)
         # get.img_check(src)
-        cv2.imwrite(roi_path + '/' + src_name + '_binary' + '.jpg', src)   # 저장
+        cv2.imwrite(roi_path + '/' + self.src_name + '_binary' + '.jpg', src)   # 저장
 
 
         ## contouring
         contours, hierarchy = cv2.findContours(src, mode=cv2.RETR_LIST, method=cv2.CHAIN_APPROX_TC89_L1)
-        src_check = get.printRGB()
+        src_check = cv2.imread(self.src_file, cv2.IMREAD_COLOR)
         src_contour = cv2.drawContours(src_check, contours, contourIdx=-1, color=(0, 255, 0), thickness=1)
-        cv2.imwrite(roi_path + '/' + src_name + '_contour' + '.jpg', src_contour)   # 저장
+        cv2.imwrite(roi_path + '/' + self.src_name + '_contour' + '.jpg', src_contour)   # 저장
         # get.img_check(src_contour)
 
 
@@ -109,12 +109,19 @@ class prep:
 
                     # 사각형 그리기
                     rect = cv2.rectangle(src_check, (x, y), (x+w, y+h), (255, 0, 255), thickness=2)
-                    cv2.imwrite(roi_path + '/' + src_name + '_rect' + '.jpg', rect)  # 저장
+                    cv2.imwrite(roi_path + '/' + self.src_name + '_rect' + '.jpg', rect)  # 저장
                     # cv2.imshow('roi', rect)
                     # key = cv2.waitKey()
                     # if key == 27:
                     #     break
 
-        src_roi[src_name] = data_roi_coo
+        src_roi[self.src_name] = data_roi_coo
 
         return src_roi
+
+    # ROI를 탐지하지 못한 경우를 탐지
+    def no_box(self):
+        src_roi = self.find_8seg()
+
+        if len(src_roi[self.src_name]) == 0:
+            print("ROI를 탐지하지 못했습니다.")
