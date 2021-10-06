@@ -20,8 +20,6 @@ print("8segment ROI를 탐지한 이미지 개수:", sum([1 for x in src_roi.val
 # OCR 수행을 위한 전처리
 
 import cv2
-import os
-
 import numpy as np
 
 from prep_img import GetImg
@@ -61,17 +59,8 @@ class OCR_prep:
 
         # get ROI coordinates
         x1, y1, x2, y2 = r.read_roi(roi_filename)
-        width = x2 - x1
-        height = y2 - y1
-
-        # calculate ROI coordinates in origin image
-        x1_ = int(x1 - 0.4 * width)
-        x2_ = int(x2 + 0.4 * width)
-        y1_ = int(y1 - 0.7 * height)
-        y2_ = int(y2 + 3 * height)
-
-        # return x1_, y1_, x2_, y2_
-        return src[y1_:y2_, x1_:x2_]  # height, width
+        roi_width = x2 - x1
+        roi_height = y2 - y1
 
         # Get original img size
         src_height, src_width = src.shape[:2]
@@ -80,8 +69,7 @@ class OCR_prep:
         # calculate ratio
         # tan = src_height / src_width  # 좌표변환 기준
         ratio = int(src_width / 700)    # 700 -> 원본 이미지 사이즈 변환 비율
-        # ratio_h = int(700 * src_height / src_width) ############################
-
+        # ratio_h = int(700 * src_height / src_width)
 
         x1_ = x1 * ratio
         y1_ = y1 * ratio
@@ -231,7 +219,6 @@ class OCR_prep:
             src_binary = cv2.adaptiveThreshold(src, max_val, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,
                                                block_size, C)
             # get.img_check(src_binary)
-
 
 
 
@@ -387,7 +374,7 @@ class OCR_prep:
 
 
             # 좌표를 저장할 경로 생성
-            roi_path = './data/text_roi/' + src_name
+            roi_path = './data/show/' + src_name
             rp = CreatePath()
             rp.create_path(roi_path)
 
@@ -395,9 +382,12 @@ class OCR_prep:
             ## 이미지 읽어오기
             get = GetImg(src_name)
             src = get.printGray()
+            # get.img_check(src)
 
             # src = get.printLAB()  # LAB 컬러채널
             # src = src[:,:,0]      # l, a, b에서 컬러채널 l 분리
+            # get.img_check(src)
+
 
             # median = cv2.medianBlur(src, 5)    # 필터 적용
             # src = 255 - median  # 필터 반전
@@ -426,13 +416,13 @@ class OCR_prep:
             src = cv2.adaptiveThreshold(src, max_val, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV,
                                                block_size, C)
             # get.img_check(src)
+            # cv2.imwrite(roi_path + '/' + src_name + '_binary' + '.jpg', src)   # 저장
 
 
 
-
-            # morphology operation
+            # morphology operation (XXX)
             # 원본이미지에서 적절한 커널사이즈가 설정되도록 변경
-            src_width, _ = src.shape
+            # src_width, _ = src.shape
 
             # # MORPH_DILATE - rect
             # k_box_x = int(1 * src_width / 700)
@@ -449,22 +439,26 @@ class OCR_prep:
             # # get.img_check(src)
 
 
-
-
             ## contouring
-            # contours, hierarchy = cv2.findContours(src_close, mode=cv2.RETR_LIST, method=cv2.CHAIN_APPROX_TC89_L1)
             contours, hierarchy = cv2.findContours(src, mode=cv2.RETR_LIST, method=cv2.CHAIN_APPROX_TC89_L1)
 
 
             # contour 확인
-            src_check = get.printRGB()
+            # src_check = get.printRGB()
             # src_contour = cv2.drawContours(src_check, contours, contourIdx=-1, color=(0, 0, 255), thickness=1)
+            # cv2.imwrite(roi_path + '/' + src_name + '_contour' + '.jpg', src_contour)   # 저장
+
             # get.img_check(src_contour)
 
 
             # 추려낸 contours 대상으로 사각형 그려서 text 영역별로 crop 수행
             data_roi_coo = set()   # 좌표 저장할 set. epsilon 범위별로 잡히는 좌표가 중복되는 경우가 있음. 중복 저장을 피하기 위해 set에 저장.
+
             for con in contours:
+                # 외곽선 껍질 그리기
+                # hull = cv2.convexHull(con, clockwise=True)
+                # src = cv2.drawContours(src_check, [hull], -1, (255, 0, 255), 1)
+            # get.img_check(src_contour)
 
                 perimeter = cv2.arcLength(con, True)    # 외곽선 둘레 길이를 반환
 
@@ -485,7 +479,7 @@ class OCR_prep:
                     approx = cv2.approxPolyDP(con, epsilon * perimeter, True)
 
                     # 다각형 그려서 확인
-                    # poly = cv2.polylines(src, [approx], True, (0, 0, 255), thickness=1)
+                    # poly = cv2.polylines(src, [approx], True, (0, 255, 255), thickness=2)
                     # cv2.imshow('poly', poly)
                     # key = cv2.waitKey()
                     # if key == 27:
@@ -497,129 +491,232 @@ class OCR_prep:
                         x, y, w, h = cv2.boundingRect(con)        # 좌표를 감싸는 최소면적 사각형 정보 반환
 
 
+                        # ## 투시변환 및 회전을 위한 기준 설정
+                        # # contouring 영역 내에서 최소 사각형 그리기
+                        # rect = cv2.minAreaRect(con)     # center, angle, size
+                        # print(rect)
+                        # min_box = cv2.boxPoints(rect)   # np.array 반환
+                        # min_box = np.int0(min_box)
+                        #
+                        # src_check = get.printRGB()
+                        # src_check = cv2.drawContours(src_check, [min_box], -1, (255, 0, 0), 2)
+                        # cv2.imshow("min_box", src_check)
+
+
+                        # for j in range(4):
+                        #     cv2.line(src_check, (rect.points()[j].X, rect.points()[j].Y, rect.points()[(j + 1) % 4].X, rect.points()[(j + 1) % 4].Y))
+
+
                         src_w = src.shape[1]
                         src_h = src.shape[0]
 
-                        # 8-segment ROI 특정
-                        if (w < 0.2 * src_w) or (w > 0.6 * src_w) or (h > 0.2 * src_h) or (w / h > 4) or (
-                                w / h < 1.7):  # 노이즈 무시
+                        # 8-segment ROI 특정 조건
+                        # ROI 길이, ROI 비율, 가장자리 좌표 고려
+                        # 조건 1 : 630/789, 중복 : 3
+                        # if (w < 0.15 * src_w) or (w > 0.6 * src_w) or (h > 0.2 * src_h) or \
+                        #         (w / h > 3.5) or (w / h < 1.7) or \
+                        #         (y+h > 0.8 * src_h) or (y < 0.1 * src_h) or (x+w > 0.8 * src_w) or (x < 0.2 * src_w):  # 가장자리 제외
+
+                        # 조건 2 : 641/789, 중복 : 5
+                        # if (w < 0.15 * src_w) or (w > 0.6 * src_w) or (h > 0.2 * src_h) or \
+                        #         (w / h > 3.5) or (w / h < 1.7) or \
+                        #         (y+h > 0.9 * src_h) or (y < 0.1 * src_h) or (x+w > 0.9 * src_w) or (x < 0.1 * src_w):  # 가장자리 제외
+
+                        # 조건 3 : 629/789, 중복 : 3
+                        # if (w < 0.15 * src_w) or (w > 0.6 * src_w) or (h > 0.2 * src_h) or \
+                        #         (w / h > 3.5) or (w / h < 1.8) or \
+                        #         (y + h > 0.85 * src_h) or (y < 0.1 * src_h) or (x + w > 0.85 * src_w) or (
+                        #         x < 0.15 * src_w):  # 가장자리 제외
+                        # 조건 4 : 638/789, 중복 : 5
+                        # 중복되는 ROI의 경우 먼저 들어온 값이 실제 ROI임
+                        if (w < 0.15 * src_w) or (w > 0.6 * src_w) or (h > 0.2 * src_h) or \
+                                (w / h > 3.5) or (w / h < 1.8) or \
+                                (y + h > 0.85 * src_h) or (y < 0.1 * src_h) or (x + w > 0.85 * src_w) or (
+                                x < 0.15 * src_w):
                             break
+
 
                         # ROI 좌표를 튜플로 저장함
                         data_roi_coo.add((x, y, w, h))
 
-                        # 사각형 그리기
-                        # 이미지 출력을 수행하면 메모리상에 있던 데이터가 반환돼서 이미지 저장할 데이터가 사라짐
-                        # 저장 시에는 반드시 주석처리 할 것
-                        rect = cv2.rectangle(src_check, (x, y), (x+w, y+h), (255, 0, 255), thickness=2)
-                        cv2.imshow('roi', rect)
-                        key = cv2.waitKey()
-                        if key == 27:
-                            break
 
-
+                        # # 사각형 그리기
+                        # # 이미지 출력을 수행하면 메모리상에 있던 데이터가 반환돼서 이미지 저장할 데이터가 사라짐
+                        # # 저장 시에는 반드시 주석처리 할 것
+                        # src_check = get.printRGB()
+                        #
+                        # x1 = int(x - 0.3 * w)
+                        # y1 = int(y - 0.5 * h)
+                        # x2 = int(x + 0.3 * w)
+                        # y2 = int(y + 4 * h)
+                        #
+                        # cv2.rectangle(src_check, (x1, y1), (x2+w, y2), (0, 255, 255), thickness=3)
+                        # rect = cv2.rectangle(src_check, (x, y), (x+w, y+h), (255, 0, 255), thickness=3)
+                        # # cv2.imwrite(roi_path + '/' + src_name + '_rect' + '.jpg', rect)  # 저장
+                        # cv2.imshow('roi', rect)
+                        # key = cv2.waitKey()
+                        # if key == 27:
+                        #     break
 
             src_roi[src_name] = data_roi_coo
 
         return src_roi
 
 
-
-
-
-    # 액정영역 찾기
-    def find_8seg(self, n, m):
-
-        # Get Img
+    # ROI를 탐지하지 못한 경우의 처리
+    def no_box(self, n, m):
+        # 이미지 이름 가져오기
         dir2file = Dir2File(file_path=self.file_path)
-        file_path = dir2file.file_path
-        src_names = dir2file.filename()
+        src_names = dir2file.filename()[n:m]
+
+        # 이미지 전처리 결과 딕셔너리 가져오기
+        src_roi = self.preprocess_8seg(n, m)
+
+        for src_name in src_names:
+            print(f"-----------------------------ROI of {src_name}-----------------------------")
+
+            if len(src_roi[src_name]) == 0:
+                print("ROI를 탐지하지 못했습니다. 다시 촬영해주십시오.")
+            elif len(src_roi[src_name]) == 2:
+                print("ROI가 2개 탐지하였습니다. 첫번째 ROI를 기준으로 OCR 수행합니다.")
+            else:
+                print(src_roi[src_name])
 
 
-        # 이미지 전처리
-        roi_coo = self.preprocess(n, m)  # 딕셔너리, 키:src_name, 값:데이터영역 (x, y, w, h)
 
-        for i, src_name in enumerate(src_names[n:m]):
-            src_file = file_path + '/' + src_name + '.jpg'
-            print("-----------------------------------------")
+    # 액정영역 안의 사각형 추출하기
+    def find_4in8seg(self, n, m):
+
+        # 이미지 이름 가져오기
+        dir2file = Dir2File(file_path=self.file_path)
+        src_names = dir2file.filename()[n:m]
+
+
+        # 이미지 전처리 결과 딕셔너리 가져오기
+        src_roi = self.preprocess_8seg(n, m)
+
+        for i, src_name in enumerate(src_names):
+
+            src_file = self.file_path + '/' + src_name + '.jpg'
+            print("------------------------------------"*2)
             print(f"- {(i + 1) / (m - n) * 100:.1f}%.....{i + 1}번째_수행파일:{src_file}")  # 확인
 
-            print(f"{src_name}에서 추출한 영역 개수:", len(roi_coo[src_name]))
-            print("추출 영역 데이터 확인(x, y, w, h):", roi_coo[src_name])
+            # print(f"ROI 개수:", len(src_roi[src_name]))
+            # print("ROI 확인(x, y, w, h):", src_roi[src_name])
 
             # 이미지 가져오기
             get = GetImg(src_name)
             src = get.printGray()
 
-            # 각 추출 영역에 대해 OCR 수행
-            for roi in roi_coo[src_name]:
-                x, y, w, h = roi
+            # OCR 수행 영역 - namespace 설정
+            x1, y1, x2, y2 = 0, 0, 0, 0
 
-                # 사각형 그리기
-                # 이미지 출력을 수행하면 메모리상에 있던 데이터가 반환돼서 이미지 저장할 데이터가 사라짐
-                # 저장 시에는 반드시 주석처리 할 것
-                rect = cv2.rectangle(src, (x, y), (x+w, y+h), (0, 0, 255), thickness=2)
-                print(len(rect))
+            # ROI 검출하지 못한 경우 이미지 전체 영역 설정
+            if len(src_roi[src_name]) == 0:
+                x1, y1, x2, y2 = 0, 0, src.shape[0], src.shape[1]
 
-                cv2.imshow('roi', rect)
-                key = cv2.waitKey()
-                if key == 27:
-                    break
+            # ROI 2개 검출한 경우 이미지 첫번째 ROI 이용하도록 설정
+            elif len(src_roi[src_name]) == 2:
+                for j in src_roi[src_name][0]:
+                    x, y, w, h = j[0], j[1], j[2], j[3]
 
+                x1 = int(x - 0.3 * w)
+                y1 = int(y - 0.5 * h)
+                x2 = int(x + 0.3 * w)
+                y2 = int(y + 4 * h)
+                x1, y1, x2, y2 = 0, 0, src.shape[0], src.shape[1]
+
+            # ROI 검출한 경우 데이터 영역 설정
+            else:
+                for j in src_roi[src_name]:
+                    x, y, w, h = j[0], j[1], j[2], j[3]
+
+                x1 = int(x - 0.3 * w)
+                y1 = int(y - 0.5 * h)
+                x2 = int(x + 0.3 * w)
+                y2 = int(y + 4 * h)
+
+            # 원본 이미지에 대해 데이터 ROI 영역 슬라이싱
+            roi_src = src[y1:y2, x1:x2]
+
+            #
 
 
 
 
     def run_OCR(self, n, m):
-        pass
 
-        # # 전처리 속도보다 전처리 완료된 이미지를 불러오는 게 더 빠름
-        # # 만약 src_name에 해당하는 text_roi 폴더가 있으면 파일 불러오고
-        # # 없으면 해당 이미지 1장에 대해 preprocess 수행되도록 함
-        # # text_roi = self.preprocess(n, m)
-        #
-        # # Get Img
-        # dir2file = Dir2File(file_path=self.file_path)
-        # file_path = dir2file.file_path
-        # src_names = dir2file.filename()
-        #
-        # # pytesseract PATH 설정
-        # pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
-        #
-        # # 이미지 전처리
-        # roi_data = self.preprocess(n, m)  # 딕셔너리, 키:src_name, 값:데이터영역 (x, y, w, h)
-        #
-        # for i, src_name in enumerate(src_names[n:m]):
-        #     src_file = file_path + '/' + src_name + '.jpg'
-        #     print("-----------------------------------------")
-        #     print(f"- {(i + 1) / (m - n) * 100:.1f}%.....{i + 1}번째_수행파일:{src_file}")  # 확인
-        #
-        #     print(f"{src_name}에서 추출한 영역 개수:", len(roi_data[src_name]))
-        #     print("추출 영역 데이터 확인(x, y, w, h):", roi_data[src_name])
-        #
-        #     # 이미지 가져오기
-        #     get = GetImg(src_name)
-        #     src = get.printGray()
-        #
-        #     # 각 추출 영역에 대해 OCR 수행
-        #     for roi in roi_data[src_name]:
-        #         x, y, w, h = roi
-        #
-        #         # 원본 이미지에 대해 데이터 ROI 영역 슬라이싱
-        #         src_roi = src[y:y+h, x:x+w]
-        #
-        #         # 해당 영역에서 pytesseract 수행
-        #         # config parameters
-        #         # -l : 사용할 언어 설정
-        #         # --oem 1 : LSTM OCR 엔진 사용 설정
-        #         config = ('-l kor+eng --oem 1 --psm 3')
-        #         text = pytesseract.image_to_string(src_roi, config=config)
-        #         # text = pytesseract.image_to_string(src_roi, lang='kor')
-        #
-        #         # 확인
-        #         # if len(text) != 1:
-        #         #     print(text, len(text), type(text))
-        #         print(text)
+        # 이미지 이름 가져오기
+        dir2file = Dir2File(file_path=self.file_path)
+        src_names = dir2file.filename()[n:m]
+
+
+        # pytesseract PATH 설정
+        pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
+
+
+        # 이미지 전처리 결과 딕셔너리 가져오기
+        src_roi = self.preprocess_8seg(n, m)
+
+        for i, src_name in enumerate(src_names):
+
+            src_file = self.file_path + '/' + src_name + '.jpg'
+            print("------------------------------------"*2)
+            print(f"- {(i + 1) / (m - n) * 100:.1f}%.....{i + 1}번째_수행파일:{src_file}")  # 확인
+
+            # print(f"ROI 개수:", len(src_roi[src_name]))
+            # print("ROI 확인(x, y, w, h):", src_roi[src_name])
+
+            # 이미지 가져오기
+            get = GetImg(src_name)
+            src = get.printGray()
+
+
+            ## OCR 수행 영역 설정
+            x1, y1, x2, y2 = 0, 0, 0, 0 # namespace
+
+            # ROI 검출하지 못한 경우 이미지 전체 영역 설정
+            if len(src_roi[src_name]) == 0:
+                x1, y1, x2, y2 = 0, 0, src.shape[0], src.shape[1]
+                continue
+
+            # ROI 2개 검출한 경우 이미지 첫번째 ROI 이용하도록 설정
+            elif len(src_roi[src_name]) == 2:
+                for j in src_roi[src_name][0]:
+                    x, y, w, h = j[0], j[1], j[2], j[3]
+
+                x1 = int(x - 0.3 * w)
+                y1 = int(y - 0.5 * h)
+                x2 = int(x + 0.3 * w)
+                y2 = int(y + 4 * h)
+                x1, y1, x2, y2 = 0, 0, src.shape[0], src.shape[1]
+
+            # ROI 검출한 경우 데이터 영역 설정
+            else:
+                continue
+                for j in src_roi[src_name]:
+                    x, y, w, h = j[0], j[1], j[2], j[3]
+
+                x1 = int(x - 0.3 * w)
+                y1 = int(y - 0.5 * h)
+                x2 = int(x + 0.3 * w)
+                y2 = int(y + 4 * h)
+
+            # 원본 이미지에 대해 데이터 ROI 영역 슬라이싱
+            roi_src = src[y1:y2, x1:x2]
+
+
+            # 해당 영역에서 pytesseract 수행
+            # -l : 사용할 언어 설정
+            # --oem 1 : LSTM OCR 엔진 사용 설정
+            config = ('-l kor+eng --oem 1 --psm 3')
+            text = pytesseract.image_to_string(roi_src, config=config)
+
+
+            # 확인
+            # if len(text) != 1:
+            #     print(text, len(text), type(text))
+            print(f"- {src_name}에서 읽어낸 내용 : \n", text)
 
 
 
