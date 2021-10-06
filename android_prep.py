@@ -119,17 +119,9 @@ class prep:
 
         return src_roi
 
-    # ROI를 탐지하지 못한 경우를 탐지
-    def no_box(self):
-        src_roi = self.find_8seg()
-
-        if len(src_roi[self.src_name]) == 0:
-            print("ROI를 탐지하지 못했습니다.")
-
 
     # ROI를 탐지하지 못한 경우의 처리
     def no_box(self):
-
         # 이미지 전처리 결과 딕셔너리 가져오기
         src_roi = self.find_8seg()
 
@@ -141,3 +133,5 @@ class prep:
             print("ROI가 2개 탐지하였습니다. 다시 촬영해주십시오.")
         else:
             print(src_roi[self.src_name])
+
+
