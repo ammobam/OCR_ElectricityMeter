@@ -1,5 +1,3 @@
-(🐥진행 중인 프로젝트입니다. 작성 중인 README입니다.)
-
 # OCR Project
 
 ## [🐥프로젝트 수행일지 (click)](https://ammobam.github.io/categories/#ocr-project)
