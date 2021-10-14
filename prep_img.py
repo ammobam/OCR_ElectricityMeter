@@ -73,6 +73,12 @@ class GetImg:
         src = cv2.cvtColor(src, cv2.COLOR_BGR2HSV)
         return src
 
+    # LAB 컬러채널 이용
+    def printLAB(self):
+        src = cv2.imread(self.src_file, cv2.IMREAD_COLOR)
+        src = cv2.cvtColor(src, cv2.COLOR_BGR2LAB)
+        return src
+
 # 이미지를 컬러채널로 나눠 히스토그램 그리는 클래스
 class GetHist:
     # cv2.split(src) 과 동일함

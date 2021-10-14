@@ -543,20 +543,20 @@ class OCR_prep:
                         # # 사각형 그리기
                         # # 이미지 출력을 수행하면 메모리상에 있던 데이터가 반환돼서 이미지 저장할 데이터가 사라짐
                         # # 저장 시에는 반드시 주석처리 할 것
-                        # src_check = get.printRGB()
-                        #
-                        # x1 = int(x - 0.3 * w)
-                        # y1 = int(y - 0.5 * h)
-                        # x2 = int(x + 0.3 * w)
-                        # y2 = int(y + 4 * h)
-                        #
-                        # cv2.rectangle(src_check, (x1, y1), (x2+w, y2), (0, 255, 255), thickness=3)
-                        # rect = cv2.rectangle(src_check, (x, y), (x+w, y+h), (255, 0, 255), thickness=3)
-                        # # cv2.imwrite(roi_path + '/' + src_name + '_rect' + '.jpg', rect)  # 저장
-                        # cv2.imshow('roi', rect)
-                        # key = cv2.waitKey()
-                        # if key == 27:
-                        #     break
+                        src_check = get.printRGB()
+
+                        x1 = int(x - 0.3 * w)
+                        y1 = int(y - 0.5 * h)
+                        x2 = int(x + 0.3 * w)
+                        y2 = int(y + 4 * h)
+
+                        cv2.rectangle(src_check, (x1, y1), (x2+w, y2), (0, 255, 255), thickness=3)
+                        rect = cv2.rectangle(src_check, (x, y), (x+w, y+h), (255, 0, 255), thickness=3)
+                        # cv2.imwrite(roi_path + '/' + src_name + '_rect' + '.jpg', rect)  # 저장
+                        cv2.imshow('roi', rect)
+                        key = cv2.waitKey()
+                        if key == 27:
+                            break
 
             src_roi[src_name] = data_roi_coo
 

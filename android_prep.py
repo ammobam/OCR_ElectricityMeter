@@ -130,7 +130,7 @@ class prep:
         if len(src_roi[self.src_name]) == 0:
             print("ROI를 탐지하지 못했습니다. 다시 촬영해주십시오.")
         elif len(src_roi[self.src_name]) == 2:
-            print("ROI가 2개 탐지하였습니다. 다시 촬영해주십시오.")
+            print("ROI가 2개 탐지하였습니다. 첫번째 ROI를 기준으로 OCR 수행합니다.")
         else:
             print(src_roi[self.src_name])
 
